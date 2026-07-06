@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Delta Bot</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: #0b0f19;
+        color: #f1f5f9;
+        font-family: sans-serif;
+        padding: 15px;
+      }
+      .box {
+        background: #141b2d;
+        border: 1px solid #1f2a45;
+        padding: 15px;
+        border-radius: 10px;
+        max-width: 420px;
+        margin: auto;
+      }
+      h3 {
+        text-align: center;
+        margin-bottom: 15px;
+        color: #3b82f6;
+      }
+      .status {
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 15px;
+      }
+      .off { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444; }
+      .on  { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
+      .log-box {
+        background: #070a12;
+        color: #38bdf8;
+        font-family: monospace;
+        padding: 10px;
+        border-radius: 5px;
+        height: 200px;
+        overflow-y: auto;
+        font-size: 12px;
+        margin-bottom: 15px;
+      }
+      .log-box .log-info  { color: #38bdf8; }
+      .log-box .log-buy   { color: #10b981; font-weight: bold; }
+      .log-box .log-sell  { color: #ef4444; font-weight: bold; }
+      .log-box .log-warn  { color: #f59e0b; }
+      .log-box .log-error { color: #ef4444; }
+      label {
+        display: block;
+        font-size: 12px;
+        color: #94a3b8;
+        margin: 8px 0 4px;
+      }
+      input {
+        width: 100%;
+        background: #0b0f19;
+        border: 1px solid #1f2a45;
+        color: #fff;
+        padding: 8px;
+        border-radius: 5px;
+      }
+      .row { display: flex; gap: 10px; }
+      .row > div { flex: 1; }
+      button {
+        width: 100%;
+        padding: 10px;
+        font-weight: bold;
+        margin-top: 10px;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn-save  { background: #3b82f6; color: #fff; }
+      .btn-start { background: #10b981; color: #fff; }
+      .btn-stop  { background: #ef4444; color: #fff; }
+      .btn-stop:disabled  { background: #374151; color: #6b7280; cursor: not-allowed; }
+      .btn-start:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+      .stats {
+        background: #0b0f19;
+        border: 1px solid #1f2a45;
+        border-radius: 5px;
+        padding: 8px 10px;
+        font-size: 12px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+      .stats span { color: #94a3b8; }
+      .stats b    { color: #f1f5f9; }
+      .pnl-pos { color: #10b981 !important; }
+      .pnl-neg { color: #ef4444 !important; }
+      .divider {
+        border: none;
+        border-top: 1px solid #1f2a45;
+        margin: 12px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h3>SIVA SAKTHI VEL TRADING BOT</h3>
+
+      <div id="badge" class="status off">BOT STOPPED</div>
+
+      <!-- Live Stats Bar -->
+      <div class="stats">
+        <div><span>Position: </span><b id="stat-pos">None</b></div>
+        <div><span>Entry: </span><b id="stat-entry">-</b></div>
+        <div><span>PnL: </span><b id="stat-pnl">-</b></div>
+        <div><span>Daily Loss: </span><b id="stat-loss">$0.00</b></div>
+      </div>
+
+      <div id="logs" class="log-box">Enter API details and click Save Settings.</div>
+
+      <form id="botForm">
+        <label>Delta API Key</label>
+        <input type="password" id="key" placeholder="Enter your API key" required />
+
+        <label>Delta API Secret</label>
+        <input type="password" id="secret" placeholder="Enter your API secret" required />
+
+        <hr class="divider" />
+
+        <label>Lot Size (1 lot = 0.001 BTC)</label>
+        <input type="number" id="lots" value="1" min="1" step="1" />
+
+        <label>Max Daily Loss ($)</label>
+        <input type="number" id="loss" value="100" min="1" />
+
+        <div class="row">
+          <div>
+            <label>Take Profit (Points)</label>
+            <input type="number" id="tp-points" value="100" min="1" />
+          </div>
+          <div>
+            <label>Stop Loss (Points)</label>
+            <input type="number" id="sl-points" value="50" min="1" />
+          </div>
+        </div>
+
+        <label>Scan Interval (seconds, min 30)</label>
+        <input type="number" id="interval" value="30" min="30" />
+
+        <button type="submit" class="btn-save">SAVE SETTINGS</button>
+      </form>
+
+      <button id="start" class="btn-start">START BOT</button>
+      <button id="stop"  class="btn-stop" disabled>STOP BOT</button>
+    </div>
+
+    <script>
+      // ─── CONFIG ───────────────────────────────────────────────
+      const PROXY_URL   = "http://127.0.0.1:5000";
+      const SYMBOL      = "BTCUSD";
+      const PRODUCT_ID  = 27;          // Verified: BTCUSD Perpetual
+      const RESOLUTION  = "15m";        // 15-minute candles (numeric format)
+      const CONTRACT_VAL = 0.001;      // 1 lot = 0.001 BTC (verified)
+
+      // ─── STATE ────────────────────────────────────────────────
+      let apiKey      = "";
+      let apiSecret   = "";
+      let running     = false;
+      let lotSize     = 1;
+      let maxDailyLoss = 100;
+      let tpPoints    = 100;
+      let slPoints    = 50;
+      let scanInterval = 30000;
+      let timer       = null;
+
+      // Position tracking
+      let currentPosition = null;  // null | "buy" | "sell"
+      let entryPrice      = 0;
+      let dailyLoss       = 0;
+      let dailyLossDate   = new Date().toDateString();
+
+      // ─── LOGGING ──────────────────────────────────────────────
+      function msg(text, type = "info") {
+        const box  = document.getElementById("logs");
+        const time = new Date().toLocaleTimeString();
+        const cls  = "log-" + type;
+        box.innerHTML += `<span class="${cls}">[${time}] ${text}</span><br>`;
+        box.scrollTop  = box.scrollHeight;
+      }
+
+      // ─── STATS BAR UPDATE ─────────────────────────────────────
+      function updateStats(currentPrice) {
+        document.getElementById("stat-pos").textContent =
+          currentPosition ? currentPosition.toUpperCase() : "None";
+
+        document.getElementById("stat-entry").textContent =
+          entryPrice ? "$" + entryPrice.toFixed(1) : "-";
+
+        const lossEl = document.getElementById("stat-loss");
+        lossEl.textContent = "$" + dailyLoss.toFixed(2);
+        lossEl.className   = dailyLoss > 0 ? "pnl-neg" : "";
+
+        const pnlEl = document.getElementById("stat-pnl");
+        if (currentPosition && entryPrice && currentPrice) {
+          let rawPnl = 0;
+          if (currentPosition === "buy") {
+            rawPnl = (currentPrice - entryPrice) * lotSize * CONTRACT_VAL;
+          } else {
+            rawPnl = (entryPrice - currentPrice) * lotSize * CONTRACT_VAL;
+          }
+          pnlEl.textContent = "$" + rawPnl.toFixed(2);
+          pnlEl.className   = rawPnl >= 0 ? "pnl-pos" : "pnl-neg";
+        } else {
+          pnlEl.textContent = "-";
+          pnlEl.className   = "";
+        }
+      }
+
+      // ─── DAILY LOSS RESET ─────────────────────────────────────
+      function checkDailyReset() {
+        const today = new Date().toDateString();
+        if (today !== dailyLossDate) {
+          dailyLoss     = 0;
+          dailyLossDate = today;
+          msg("Daily loss counter reset for new day.", "info");
+        }
+      }
+
+      // ─── PROXY API CALL (Authenticated) ───────────────────────
+      async function apiCall(method, path, query = "", payload = "") {
+        const resp = await fetch(PROXY_URL + "/proxy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key:    apiKey,
+            api_secret: apiSecret,
+            method:     method,
+            path:       path,
+            query:      query,
+            payload:    payload
+          })
+        });
+        return await resp.json();
+      }
+
+      // ─── PUBLIC API CALL (No Auth) ────────────────────────────
+      async function publicCall(path, query = "") {
+        const url  = PROXY_URL + "/public?path=" +
+                     encodeURIComponent(path) +
+                     "&query=" + encodeURIComponent(query);
+        const resp = await fetch(url);
+        return await resp.json();
+      }
+
+      // ─── PLACE ORDER ──────────────────────────────────────────
+      async function placeOrder(side) {
+        msg("Placing " + side.toUpperCase() + " market order (" + lotSize + " lot)...", side);
+        const body = JSON.stringify({
+          product_id: PRODUCT_ID,
+          size:       lotSize,
+          side:       side,
+          order_type: "market_order"
+        });
+
+        const res = await apiCall("POST", "/v2/orders", "", body);
+
+        if (res.success) {
+          const orderId    = res.result.id;
+          const fillPrice  = parseFloat(res.result.average_fill_price || 0);
+          entryPrice       = fillPrice || entryPrice;
+          currentPosition  = side;
+          msg("Order filled! ID: " + orderId + " | Fill: $" + fillPrice, side);
+          return true;
+        } else {
+          const errMsg = (res.error && res.error.message)
+            ? res.error.message
+            : JSON.stringify(res);
+          msg("Order FAILED: " + errMsg, "error");
+          return false;
+        }
+      }
+
+      // ─── CLOSE POSITION ───────────────────────────────────────
+      async function closePosition(reason) {
+        if (!currentPosition) return;
+        const closeSide = currentPosition === "buy" ? "sell" : "buy";
+        msg("Closing position (" + reason + ")...", "warn");
+
+        // Calculate PnL before closing
+        const ticker = await publicCall("/v2/tickers/" + SYMBOL);
+        let closePrice = 0;
+        if (ticker && ticker.result) {
+          closePrice = parseFloat(ticker.result.mark_price || 0);
+        }
+
+        const success = await placeOrder(closeSide);
+        if (success) {
+          // Record PnL
+          if (entryPrice && closePrice) {
+            let pnl = 0;
+            if (currentPosition === "buy") {
+              pnl = (closePrice - entryPrice) * lotSize * CONTRACT_VAL;
+            } else {
+              pnl = (entryPrice - closePrice) * lotSize * CONTRACT_VAL;
+            }
+            if (pnl < 0) {
+              dailyLoss += Math.abs(pnl);
+              msg("Loss recorded: $" + Math.abs(pnl).toFixed(2) +
+                  " | Total daily loss: $" + dailyLoss.toFixed(2), "warn");
+            } else {
+              msg("Profit: $" + pnl.toFixed(2), "buy");
+            }
+          }
+          currentPosition = null;
+          entryPrice      = 0;
+          updateStats(closePrice);
+        }
+      }
+
+      // ─── EMA CALCULATION ──────────────────────────────────────
+      function calcEMA(arr, period) {
+        const k   = 2 / (period + 1);
+        let ema   = [arr[0]];
+        for (let i = 1; i < arr.length; i++) {
+          ema.push(arr[i] * k + ema[i - 1] * (1 - k));
+        }
+        return ema;
+      }
+
+      // ─── RSI CALCULATION ──────────────────────────────────────
+      function calcRSI(arr, period = 14) {
+        if (arr.length < period + 1) return 50;
+        const deltas = [];
+        for (let i = 1; i < arr.length; i++) {
+          deltas.push(arr[i] - arr[i - 1]);
+        }
+        const gains  = deltas.map(v => v > 0 ? v : 0);
+        const losses = deltas.map(v => v < 0 ? -v : 0);
+
+        let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+        let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
+        for (let i = period; i < deltas.length; i++) {
+          avgGain = (avgGain * (period - 1) + gains[i])  / period;
+          avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+        }
+        return avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+      }
+
+      // ─── MAIN MARKET SCAN ─────────────────────────────────────
+      async function checkMarket() {
+        if (!running) return;
+
+        checkDailyReset();
+
+        // Max daily loss guard
+        if (dailyLoss >= maxDailyLoss) {
+          msg("Max daily loss of $" + maxDailyLoss + " reached. Bot paused.", "error");
+          stopBot();
+          return;
+        }
+
+        try {
+          msg("Scanning market...", "info");
+
+          // Fetch candles via public endpoint
+          const now   = Math.floor(Date.now() / 1000);
+          const start = now - 54000;
+          const query = "?resolution=" + RESOLUTION +
+                        "&symbol=" + SYMBOL +
+                        "&start=" + start +
+                        "&end=" + now;
+
+          const data = await publicCall("/v2/history/candles", query);
+
+          if (!data.success || !data.result || data.result.length < 25) {
+            msg("Not enough candle data received.", "warn");
+            return;
+          }
+
+          const closes = data.result.map(c => parseFloat(c.close));
+          const price  = closes[closes.length - 1];
+
+          const ema9  = calcEMA(closes, 9);
+          const ema21 = calcEMA(closes, 21);
+          const rsi   = calcRSI(closes, 14);
+
+          const currShort = ema9[ema9.length - 1];
+          const currLong  = ema21[ema21.length - 1];
+          const prevShort = ema9[ema9.length - 2];
+          const prevLong  = ema21[ema21.length - 2];
+
+          msg(
+            "Price: $" + price.toFixed(1) +
+            " | EMA9: " + currShort.toFixed(1) +
+            " | EMA21: " + currLong.toFixed(1) +
+            " | RSI: " + rsi.toFixed(1),
+            "info"
+          );
+
+          updateStats(price);
+
+          // ── TP / SL CHECK (if in position) ──────────────────
+          if (currentPosition && entryPrice) {
+            let priceDiff = 0;
+            if (currentPosition === "buy") {
+              priceDiff = price - entryPrice;
+            } else {
+              priceDiff = entryPrice - price;
+            }
+
+            if (priceDiff >= tpPoints) {
+              msg("Take Profit hit! +" + priceDiff.toFixed(1) + " pts", "buy");
+              await closePosition("Take Profit");
+              return;
+            }
+            if (priceDiff <= -slPoints) {
+              msg("Stop Loss hit! " + priceDiff.toFixed(1) + " pts", "sell");
+              await closePosition("Stop Loss");
+              return;
+            }
+          }
+
+          // ── SIGNAL LOGIC ────────────────────────────────────
+          const bullish = currShort > currLong && prevShort > prevLong && rsi < 65;
+          const bearish = currShort < currLong && prevShort < prevLong && rsi > 35;
+
+          if (bullish) {
+            if (currentPosition === "sell") {
+              msg("Signal flip: Closing SELL, opening BUY", "buy");
+              await closePosition("Signal Flip");
+              await placeOrder("buy");
+            } else if (!currentPosition) {
+              msg("BUY signal detected.", "buy");
+              await placeOrder("buy");
+            } else {
+              msg("Holding BUY position.", "info");
+            }
+          } else if (bearish) {
+            if (currentPosition === "buy") {
+              msg("Signal flip: Closing BUY, opening SELL", "sell");
+              await closePosition("Signal Flip");
+              await placeOrder("sell");
+            } else if (!currentPosition) {
+              msg("SELL signal detected.", "sell");
+              await placeOrder("sell");
+            } else {
+              msg("Holding SELL position.", "info");
+            }
+          } else {
+            msg("No clear signal. Waiting...", "info");
+          }
+
+        } catch (err) {
+          msg("Scan error: " + err.message, "error");
+        }
+      }
+
+      // ─── START BOT ────────────────────────────────────────────
+      function startBot() {
+        if (running) return;
+        if (!apiKey || !apiSecret) {
+          alert("Please save your API settings first!");
+          return;
+        }
+        running = true;
+        document.getElementById("badge").textContent = "BOT ACTIVE - RUNNING";
+        document.getElementById("badge").className   = "status on";
+        document.getElementById("start").disabled    = true;
+        document.getElementById("stop").disabled     = false;
+        msg("Bot started. Lot size: " + lotSize +
+            " | TP: " + tpPoints + " pts | SL: " + slPoints + " pts", "buy");
+        checkMarket();
+        timer = setInterval(checkMarket, scanInterval);
+      }
+
+      // ─── STOP BOT ─────────────────────────────────────────────
+      function stopBot() {
+        if (!running) return;
+        running = false;
+        clearInterval(timer);
+        timer = null;
+        document.getElementById("badge").textContent = "BOT STOPPED";
+        document.getElementById("badge").className   = "status off";
+        document.getElementById("start").disabled    = false;
+        document.getElementById("stop").disabled     = true;
+        msg("Bot stopped.", "warn");
+      }
+
+      // ─── SAVE SETTINGS ────────────────────────────────────────
+      document.getElementById("botForm").addEventListener("submit", (e) => {
+        e.preventDefault();
+        apiKey       = document.getElementById("key").value.trim();
+        apiSecret    = document.getElementById("secret").value.trim();
+        lotSize      = parseInt(document.getElementById("lots").value)    || 1;
+        maxDailyLoss = parseFloat(document.getElementById("loss").value)  || 100;
+        tpPoints     = parseFloat(document.getElementById("tp-points").value) || 100;
+        slPoints     = parseFloat(document.getElementById("sl-points").value) || 50;
+        scanInterval = Math.max(30, parseInt(document.getElementById("interval").value) || 30) * 1000;
+
+        // NOTE: Keys are NOT saved to localStorage for security
+        msg("Settings saved. TP: " + tpPoints + " pts | SL: " + slPoints +
+            " pts | Max Loss: $" + maxDailyLoss, "info");
+        alert("Settings Saved!");
+      });
+
+      document.getElementById("start").addEventListener("click", startBot);
+      document.getElementById("stop").addEventListener("click", stopBot);
+    </script>
+  </body>
+</html>
