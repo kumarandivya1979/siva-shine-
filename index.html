@@ -1,9 +1,9 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Delta 5-Stack Bot</title>
+    <title>Delta Bot</title>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
@@ -17,70 +17,70 @@
         border: 1px solid #1f2a45;
         padding: 15px;
         border-radius: 10px;
-        max-width: 620px;
+        max-width: 420px;
         margin: auto;
       }
       h3 {
         text-align: center;
         margin-bottom: 15px;
         color: #3b82f6;
-        font-size: 16px;
       }
       .status {
         padding: 10px;
         border-radius: 5px;
         text-align: center;
         font-weight: bold;
-        margin-bottom: 12px;
-        font-size: 13px;
+        margin-bottom: 15px;
       }
       .off { background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid #ef4444; }
       .on  { background: rgba(16,185,129,0.2); color: #10b981; border: 1px solid #10b981; }
-
-      /* Stack Orders Table */
-      .stack-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 12px;
+      .log-box {
+        background: #070a12;
+        color: #38bdf8;
+        font-family: monospace;
+        padding: 10px;
+        border-radius: 5px;
+        height: 200px;
+        overflow-y: auto;
         font-size: 12px;
+        margin-bottom: 15px;
       }
-      .stack-table th {
-        background: #0b0f19;
+      .log-box .log-info  { color: #38bdf8; }
+      .log-box .log-buy   { color: #10b981; font-weight: bold; }
+      .log-box .log-sell  { color: #ef4444; font-weight: bold; }
+      .log-box .log-warn  { color: #f59e0b; }
+      .log-box .log-error { color: #ef4444; }
+      label {
+        display: block;
+        font-size: 12px;
         color: #94a3b8;
-        padding: 6px 4px;
-        text-align: center;
-        border: 1px solid #1f2a45;
-        font-weight: normal;
+        margin: 8px 0 4px;
       }
-      .stack-table td {
-        padding: 4px 3px;
-        border: 1px solid #1f2a45;
-        text-align: center;
-      }
-      .stack-table input {
+      input {
         width: 100%;
         background: #0b0f19;
         border: 1px solid #1f2a45;
         color: #fff;
-        padding: 4px;
-        border-radius: 3px;
-        text-align: center;
-        font-size: 12px;
+        padding: 8px;
+        border-radius: 5px;
       }
-      .order-row td:first-child {
-        color: #3b82f6;
+      .row { display: flex; gap: 10px; }
+      .row > div { flex: 1; }
+      button {
+        width: 100%;
+        padding: 10px;
         font-weight: bold;
-        font-size: 13px;
+        margin-top: 10px;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
       }
-
-      /* Order Status Badges */
-      .badge-idle    { color: #94a3b8; }
-      .badge-open    { color: #10b981; font-weight: bold; }
-      .badge-tp      { color: #3b82f6; font-weight: bold; }
-      .badge-sl      { color: #ef4444; font-weight: bold; }
-      .badge-waiting { color: #f59e0b; font-weight: bold; }
-
-      /* Stats */
+      .btn-save  { background: #3b82f6; color: #fff; }
+      .btn-start { background: #10b981; color: #fff; }
+      .btn-stop  { background: #ef4444; color: #fff; }
+      .btn-stop:disabled  { background: #374151; color: #6b7280; cursor: not-allowed; }
+      .btn-start:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
       .stats {
         background: #0b0f19;
         border: 1px solid #1f2a45;
@@ -91,116 +91,35 @@
         display: flex;
         justify-content: space-between;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 5px;
       }
       .stats span { color: #94a3b8; }
       .stats b    { color: #f1f5f9; }
       .pnl-pos { color: #10b981 !important; }
       .pnl-neg { color: #ef4444 !important; }
-
-      /* Log */
-      .log-box {
-        background: #070a12;
-        color: #38bdf8;
-        font-family: monospace;
-        padding: 10px;
-        border-radius: 5px;
-        height: 180px;
-        overflow-y: auto;
-        font-size: 11px;
-        margin-bottom: 12px;
-      }
-      .log-info  { color: #38bdf8; }
-      .log-buy   { color: #10b981; font-weight: bold; }
-      .log-sell  { color: #ef4444; font-weight: bold; }
-      .log-warn  { color: #f59e0b; }
-      .log-error { color: #ef4444; }
-      .log-tp    { color: #3b82f6; font-weight: bold; }
-
-      /* Form */
-      label {
-        display: block;
-        font-size: 12px;
-        color: #94a3b8;
-        margin: 8px 0 4px;
-      }
-      input[type="password"],
-      input[type="number"]:not(.stack-table input) {
-        width: 100%;
-        background: #0b0f19;
-        border: 1px solid #1f2a45;
-        color: #fff;
-        padding: 8px;
-        border-radius: 5px;
-        font-size: 13px;
-      }
-      .row { display: flex; gap: 10px; }
-      .row > div { flex: 1; }
-      button {
-        width: 100%;
-        padding: 10px;
-        font-weight: bold;
-        margin-top: 8px;
-        border-radius: 5px;
+      .divider {
         border: none;
-        cursor: pointer;
-        font-size: 13px;
-      }
-      .btn-save  { background: #3b82f6; color: #fff; }
-      .btn-start { background: #10b981; color: #fff; }
-      .btn-stop  { background: #ef4444; color: #fff; }
-      .btn-stop:disabled  { background: #374151; color: #6b7280; cursor: not-allowed; }
-      .btn-start:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
-      .divider { border: none; border-top: 1px solid #1f2a45; margin: 12px 0; }
-      .section-title {
-        font-size: 12px;
-        color: #3b82f6;
-        margin-bottom: 6px;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        border-top: 1px solid #1f2a45;
+        margin: 12px 0;
       }
     </style>
   </head>
   <body>
     <div class="box">
-      <h3>SIVA SAKTHI VEL - 5 STACK TRADING BOT</h3>
+      <h3>SIVA SAKTHI VEL TRADING BOT</h3>
 
       <div id="badge" class="status off">BOT STOPPED</div>
 
-      <!-- Global Stats -->
+      <!-- Live Stats Bar -->
       <div class="stats">
-        <div><span>Signal: </span><b id="stat-signal">None</b></div>
-        <div><span>Entry Price: </span><b id="stat-entry">-</b></div>
-        <div><span>Total PnL: </span><b id="stat-pnl">-</b></div>
+        <div><span>Position: </span><b id="stat-pos">None</b></div>
+        <div><span>Entry: </span><b id="stat-entry">-</b></div>
+        <div><span>PnL: </span><b id="stat-pnl">-</b></div>
         <div><span>Daily Loss: </span><b id="stat-loss">$0.00</b></div>
-        <div><span>Open Orders: </span><b id="stat-open">0/5</b></div>
-        <div><span>Cycle: </span><b id="stat-cycle">0</b></div>
       </div>
 
-      <!-- 5 Stack Orders Table -->
-      <div class="section-title">5 Stack Orders Configuration</div>
-      <table class="stack-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Lots</th>
-            <th>TP (pts)</th>
-            <th>SL (pts)</th>
-            <th>Status</th>
-            <th>Fill $</th>
-            <th>PnL $</th>
-          </tr>
-        </thead>
-        <tbody id="stack-body">
-          <!-- Rows generated by JS -->
-        </tbody>
-      </table>
-
-      <!-- Log Box -->
       <div id="logs" class="log-box">Enter API details and click Save Settings.</div>
 
-      <!-- API Settings Form -->
       <form id="botForm">
         <label>Delta API Key</label>
         <input type="password" id="key" placeholder="Enter your API key" required />
@@ -210,16 +129,25 @@
 
         <hr class="divider" />
 
+        <label>Lot Size (1 lot = 0.001 BTC)</label>
+        <input type="number" id="lots" value="1" min="1" step="1" />
+
+        <label>Max Daily Loss ($)</label>
+        <input type="number" id="loss" value="100" min="1" />
+
         <div class="row">
           <div>
-            <label>Max Daily Loss ($)</label>
-            <input type="number" id="loss" value="100" min="1" />
+            <label>Take Profit (Points)</label>
+            <input type="number" id="tp-points" value="100" min="1" />
           </div>
           <div>
-            <label>Scan Interval (sec, min 15)</label>
-            <input type="number" id="interval" value="30" min="15" />
+            <label>Stop Loss (Points)</label>
+            <input type="number" id="sl-points" value="50" min="1" />
           </div>
         </div>
+
+        <label>Scan Interval (seconds, min 30)</label>
+        <input type="number" id="interval" value="30" min="30" />
 
         <button type="submit" class="btn-save">SAVE SETTINGS</button>
       </form>
@@ -230,184 +158,64 @@
 
     <script>
       // ─── CONFIG ───────────────────────────────────────────────
-      const PROXY_URL    = "http://127.0.0.1:5000";
-      const SYMBOL       = "BTCUSD";
-      const PRODUCT_ID   = 27;           // Verified BTCUSD Perpetual
-      const RESOLUTION   = "15m";        // 15-minute candles
-      const CONTRACT_VAL = 0.001;        // 1 lot = 0.001 BTC (verified)
-      const NUM_ORDERS   = 5;
-
-      // ─── DEFAULT STACK CONFIG ─────────────────────────────────
-      // Each order: { lots, tp, sl }
-      const DEFAULT_STACK = [
-        { lots: 1, tp: 300, sl: 300  },
-        { lots: 1, tp: 350, sl: 300  },
-        { lots: 1, tp: 400, sl: 300  },
-        { lots: 1, tp: 450, sl: 300  },
-        { lots: 1, tp: 500, sl: 300  }
-      ];
+      const PROXY_URL   = "http://127.0.0.1:5000";
+      const SYMBOL      = "BTCUSD";
+      const PRODUCT_ID  = 27;          // Verified: BTCUSD Perpetual
+      const RESOLUTION  = "15m";        // 15-minute candles (numeric format)
+      const CONTRACT_VAL = 0.001;      // 1 lot = 0.001 BTC (verified)
 
       // ─── STATE ────────────────────────────────────────────────
-      let apiKey       = "";
-      let apiSecret    = "";
-      let running      = false;
+      let apiKey      = "";
+      let apiSecret   = "";
+      let running     = false;
+      let lotSize     = 1;
       let maxDailyLoss = 100;
+      let tpPoints    = 100;
+      let slPoints    = 50;
       let scanInterval = 30000;
-      let timer        = null;
-      let cycleCount   = 0;
+      let timer       = null;
 
-      // Daily loss tracking
-      let dailyLoss     = 0;
-      let dailyLossDate = new Date().toDateString();
-
-      // Signal tracking (prevent re-entry on same signal)
-      let lastSignal = null;  // "buy" | "sell" | null
-
-      // Stack orders state
-      // Each: { lots, tp, sl, status, entryPrice, orderId, pnl }
-      // status: "idle" | "open" | "tp_hit" | "sl_hit"
-      let stackOrders = [];
-
-      // ─── BUILD STACK TABLE ────────────────────────────────────
-      function buildStackTable() {
-        const tbody = document.getElementById("stack-body");
-        tbody.innerHTML = "";
-        for (let i = 0; i < NUM_ORDERS; i++) {
-          const def = DEFAULT_STACK[i];
-          const row = document.createElement("tr");
-          row.className = "order-row";
-          row.id = "row-" + i;
-          row.innerHTML = `
-            <td>#${i + 1}</td>
-            <td><input type="number" id="lots-${i}" value="${def.lots}" min="1" step="1" /></td>
-            <td><input type="number" id="tp-${i}"   value="${def.tp}"   min="1" /></td>
-            <td><input type="number" id="sl-${i}"   value="${def.sl}"   min="1" /></td>
-            <td id="status-${i}" class="badge-idle">Idle</td>
-            <td id="fill-${i}">-</td>
-            <td id="pnl-${i}">-</td>
-          `;
-          tbody.appendChild(row);
-        }
-      }
-
-      // ─── READ STACK CONFIG FROM TABLE ─────────────────────────
-      function readStackConfig() {
-        let config = [];
-        for (let i = 0; i < NUM_ORDERS; i++) {
-          config.push({
-            lots:        parseInt(document.getElementById("lots-" + i).value) || 1,
-            tp:          parseFloat(document.getElementById("tp-" + i).value) || 100,
-            sl:          parseFloat(document.getElementById("sl-" + i).value) || 50,
-            status:      "idle",
-            entryPrice:  0,
-            orderId:     null,
-            pnl:         0
-          });
-        }
-        return config;
-      }
-
-      // ─── UPDATE TABLE ROW UI ──────────────────────────────────
-      function updateRowUI(i, currentPrice) {
-        const o = stackOrders[i];
-        if (!o) return;
-
-        const statusEl = document.getElementById("status-" + i);
-        const fillEl   = document.getElementById("fill-" + i);
-        const pnlEl    = document.getElementById("pnl-" + i);
-
-        // Status badge
-        if (o.status === "idle") {
-          statusEl.textContent = "Idle";
-          statusEl.className   = "badge-idle";
-        } else if (o.status === "open") {
-          statusEl.textContent = "OPEN";
-          statusEl.className   = "badge-open";
-        } else if (o.status === "tp_hit") {
-          statusEl.textContent = "TP HIT";
-          statusEl.className   = "badge-tp";
-        } else if (o.status === "sl_hit") {
-          statusEl.textContent = "SL HIT";
-          statusEl.className   = "badge-sl";
-        } else if (o.status === "waiting") {
-          statusEl.textContent = "Closing...";
-          statusEl.className   = "badge-waiting";
-        }
-
-        // Fill price
-        fillEl.textContent = o.entryPrice ? "$" + o.entryPrice.toFixed(1) : "-";
-
-        // Live PnL for open orders
-        if (o.status === "open" && o.entryPrice && currentPrice) {
-          let livePnl = 0;
-          if (lastSignal === "buy") {
-            livePnl = (currentPrice - o.entryPrice) * o.lots * CONTRACT_VAL;
-          } else {
-            livePnl = (o.entryPrice - currentPrice) * o.lots * CONTRACT_VAL;
-          }
-          pnlEl.textContent = "$" + livePnl.toFixed(2);
-          pnlEl.className   = livePnl >= 0 ? "pnl-pos" : "pnl-neg";
-        } else if (o.status === "tp_hit" || o.status === "sl_hit") {
-          pnlEl.textContent = "$" + o.pnl.toFixed(2);
-          pnlEl.className   = o.pnl >= 0 ? "pnl-pos" : "pnl-neg";
-        } else {
-          pnlEl.textContent = "-";
-          pnlEl.className   = "";
-        }
-      }
-
-      // ─── UPDATE GLOBAL STATS ──────────────────────────────────
-      function updateGlobalStats(currentPrice) {
-        // Signal
-        document.getElementById("stat-signal").textContent =
-          lastSignal ? lastSignal.toUpperCase() : "None";
-
-        // Entry price (first open order)
-        const firstOpen = stackOrders.find(o => o.status === "open");
-        document.getElementById("stat-entry").textContent =
-          firstOpen ? "$" + firstOpen.entryPrice.toFixed(1) : "-";
-
-        // Total live PnL
-        let totalPnl = 0;
-        stackOrders.forEach(o => {
-          if (o.status === "open" && o.entryPrice && currentPrice) {
-            if (lastSignal === "buy") {
-              totalPnl += (currentPrice - o.entryPrice) * o.lots * CONTRACT_VAL;
-            } else {
-              totalPnl += (o.entryPrice - currentPrice) * o.lots * CONTRACT_VAL;
-            }
-          } else if (o.status === "tp_hit" || o.status === "sl_hit") {
-            totalPnl += o.pnl;
-          }
-        });
-        const pnlEl = document.getElementById("stat-pnl");
-        pnlEl.textContent = "$" + totalPnl.toFixed(2);
-        pnlEl.className   = totalPnl >= 0 ? "pnl-pos" : "pnl-neg";
-
-        // Daily loss
-        const lossEl = document.getElementById("stat-loss");
-        lossEl.textContent = "$" + dailyLoss.toFixed(2);
-        lossEl.className   = dailyLoss > 0 ? "pnl-neg" : "";
-
-        // Open orders count
-        const openCount = stackOrders.filter(o => o.status === "open").length;
-        document.getElementById("stat-open").textContent = openCount + "/5";
-
-        // Cycle count
-        document.getElementById("stat-cycle").textContent = cycleCount;
-
-        // Update all rows
-        for (let i = 0; i < NUM_ORDERS; i++) {
-          updateRowUI(i, currentPrice);
-        }
-      }
+      // Position tracking
+      let currentPosition = null;  // null | "buy" | "sell"
+      let entryPrice      = 0;
+      let dailyLoss       = 0;
+      let dailyLossDate   = new Date().toDateString();
 
       // ─── LOGGING ──────────────────────────────────────────────
       function msg(text, type = "info") {
         const box  = document.getElementById("logs");
         const time = new Date().toLocaleTimeString();
-        box.innerHTML += `<span class="log-${type}">[${time}] ${text}</span><br>`;
+        const cls  = "log-" + type;
+        box.innerHTML += `<span class="${cls}">[${time}] ${text}</span><br>`;
         box.scrollTop  = box.scrollHeight;
+      }
+
+      // ─── STATS BAR UPDATE ─────────────────────────────────────
+      function updateStats(currentPrice) {
+        document.getElementById("stat-pos").textContent =
+          currentPosition ? currentPosition.toUpperCase() : "None";
+
+        document.getElementById("stat-entry").textContent =
+          entryPrice ? "$" + entryPrice.toFixed(1) : "-";
+
+        const lossEl = document.getElementById("stat-loss");
+        lossEl.textContent = "$" + dailyLoss.toFixed(2);
+        lossEl.className   = dailyLoss > 0 ? "pnl-neg" : "";
+
+        const pnlEl = document.getElementById("stat-pnl");
+        if (currentPosition && entryPrice && currentPrice) {
+          let rawPnl = 0;
+          if (currentPosition === "buy") {
+            rawPnl = (currentPrice - entryPrice) * lotSize * CONTRACT_VAL;
+          } else {
+            rawPnl = (entryPrice - currentPrice) * lotSize * CONTRACT_VAL;
+          }
+          pnlEl.textContent = "$" + rawPnl.toFixed(2);
+          pnlEl.className   = rawPnl >= 0 ? "pnl-pos" : "pnl-neg";
+        } else {
+          pnlEl.textContent = "-";
+          pnlEl.className   = "";
+        }
       }
 
       // ─── DAILY LOSS RESET ─────────────────────────────────────
@@ -420,7 +228,7 @@
         }
       }
 
-      // ─── PROXY API CALL ───────────────────────────────────────
+      // ─── PROXY API CALL (Authenticated) ───────────────────────
       async function apiCall(method, path, query = "", payload = "") {
         const resp = await fetch(PROXY_URL + "/proxy", {
           method: "POST",
@@ -428,13 +236,16 @@
           body: JSON.stringify({
             api_key:    apiKey,
             api_secret: apiSecret,
-            method, path, query, payload
+            method:     method,
+            path:       path,
+            query:      query,
+            payload:    payload
           })
         });
         return await resp.json();
       }
 
-      // ─── PUBLIC API CALL ──────────────────────────────────────
+      // ─── PUBLIC API CALL (No Auth) ────────────────────────────
       async function publicCall(path, query = "") {
         const url  = PROXY_URL + "/public?path=" +
                      encodeURIComponent(path) +
@@ -443,12 +254,12 @@
         return await resp.json();
       }
 
-      // ─── PLACE SINGLE ORDER ───────────────────────────────────
-      async function placeSingleOrder(index, side) {
-        const o    = stackOrders[index];
+      // ─── PLACE ORDER ──────────────────────────────────────────
+      async function placeOrder(side) {
+        msg("Placing " + side.toUpperCase() + " market order (" + lotSize + " lot)...", side);
         const body = JSON.stringify({
           product_id: PRODUCT_ID,
-          size:       o.lots,
+          size:       lotSize,
           side:       side,
           order_type: "market_order"
         });
@@ -456,139 +267,62 @@
         const res = await apiCall("POST", "/v2/orders", "", body);
 
         if (res.success) {
-          const fillPrice        = parseFloat(res.result.average_fill_price || 0);
-          stackOrders[index].orderId     = res.result.id;
-          stackOrders[index].entryPrice  = fillPrice;
-          stackOrders[index].status      = "open";
-          msg(
-            `Order #${index+1} filled | ID: ${res.result.id} | Fill: $${fillPrice} | Lots: ${o.lots}`,
-            side === "buy" ? "buy" : "sell"
-          );
+          const orderId    = res.result.id;
+          const fillPrice  = parseFloat(res.result.average_fill_price || 0);
+          entryPrice       = fillPrice || entryPrice;
+          currentPosition  = side;
+          msg("Order filled! ID: " + orderId + " | Fill: $" + fillPrice, side);
           return true;
         } else {
-          const errMsg = res.error && res.error.message
-            ? res.error.message : JSON.stringify(res.error || res);
-          msg(`Order #${index+1} FAILED: ${errMsg}`, "error");
+          const errMsg = (res.error && res.error.message)
+            ? res.error.message
+            : JSON.stringify(res);
+          msg("Order FAILED: " + errMsg, "error");
           return false;
         }
       }
 
-      // ─── PLACE ALL 5 STACK ORDERS SIMULTANEOUSLY ──────────────
-      async function placeStackOrders(side) {
-        msg(`Placing 5 stack ${side.toUpperCase()} orders simultaneously...`,
-            side === "buy" ? "buy" : "sell");
+      // ─── CLOSE POSITION ───────────────────────────────────────
+      async function closePosition(reason) {
+        if (!currentPosition) return;
+        const closeSide = currentPosition === "buy" ? "sell" : "buy";
+        msg("Closing position (" + reason + ")...", "warn");
 
-        // Fire all 5 orders at the same time using Promise.all
-        const promises = [];
-        for (let i = 0; i < NUM_ORDERS; i++) {
-          promises.push(placeSingleOrder(i, side));
-        }
-        const results = await Promise.all(promises);
-
-        const successCount = results.filter(r => r).length;
-        msg(`Stack placed: ${successCount}/5 orders filled.`,
-            successCount === 5 ? "buy" : "warn");
-
-        lastSignal = side;
-        updateGlobalStats(0);
-      }
-
-      // ─── CLOSE SINGLE ORDER ───────────────────────────────────
-      async function closeSingleOrder(index, reason, currentPrice) {
-        const o         = stackOrders[index];
-        const closeSide = lastSignal === "buy" ? "sell" : "buy";
-
-        stackOrders[index].status = "waiting";
-        updateRowUI(index, currentPrice);
-
-        const body = JSON.stringify({
-          product_id: PRODUCT_ID,
-          size:       o.lots,
-          side:       closeSide,
-          order_type: "market_order"
-        });
-
-        const res = await apiCall("POST", "/v2/orders", "", body);
-
-        if (res.success) {
-          const closePrice = parseFloat(res.result.average_fill_price || currentPrice);
-          let pnl = 0;
-          if (lastSignal === "buy") {
-            pnl = (closePrice - o.entryPrice) * o.lots * CONTRACT_VAL;
-          } else {
-            pnl = (o.entryPrice - closePrice) * o.lots * CONTRACT_VAL;
-          }
-
-          stackOrders[index].pnl    = pnl;
-          stackOrders[index].status = reason === "tp" ? "tp_hit" : "sl_hit";
-
-          if (pnl < 0) {
-            dailyLoss += Math.abs(pnl);
-          }
-
-          msg(
-            `Order #${index+1} closed (${reason.toUpperCase()}) | ` +
-            `Entry: $${o.entryPrice} | Close: $${closePrice} | ` +
-            `PnL: $${pnl.toFixed(2)}`,
-            reason === "tp" ? "tp" : "warn"
-          );
-          updateRowUI(index, currentPrice);
-          return true;
-        } else {
-          const errMsg = res.error && res.error.message
-            ? res.error.message : JSON.stringify(res.error || res);
-          msg(`Close Order #${index+1} FAILED: ${errMsg}`, "error");
-          stackOrders[index].status = "open"; // revert status
-          updateRowUI(index, currentPrice);
-          return false;
-        }
-      }
-
-      // ─── CHECK TP/SL FOR ALL OPEN ORDERS ─────────────────────
-      async function checkTPSL(currentPrice) {
-        const closePromises = [];
-
-        for (let i = 0; i < NUM_ORDERS; i++) {
-          const o = stackOrders[i];
-          if (o.status !== "open" || !o.entryPrice) continue;
-
-          let priceDiff = 0;
-          if (lastSignal === "buy") {
-            priceDiff = currentPrice - o.entryPrice;
-          } else {
-            priceDiff = o.entryPrice - currentPrice;
-          }
-
-          if (priceDiff >= o.tp) {
-            msg(`Order #${i+1} TP hit! +${priceDiff.toFixed(1)} pts (target: ${o.tp})`, "tp");
-            closePromises.push(closeSingleOrder(i, "tp", currentPrice));
-          } else if (priceDiff <= -o.sl) {
-            msg(`Order #${i+1} SL hit! ${priceDiff.toFixed(1)} pts (limit: -${o.sl})`, "warn");
-            closePromises.push(closeSingleOrder(i, "sl", currentPrice));
-          }
+        // Calculate PnL before closing
+        const ticker = await publicCall("/v2/tickers/" + SYMBOL);
+        let closePrice = 0;
+        if (ticker && ticker.result) {
+          closePrice = parseFloat(ticker.result.mark_price || 0);
         }
 
-        if (closePromises.length > 0) {
-          await Promise.all(closePromises);
+        const success = await placeOrder(closeSide);
+        if (success) {
+          // Record PnL
+          if (entryPrice && closePrice) {
+            let pnl = 0;
+            if (currentPosition === "buy") {
+              pnl = (closePrice - entryPrice) * lotSize * CONTRACT_VAL;
+            } else {
+              pnl = (entryPrice - closePrice) * lotSize * CONTRACT_VAL;
+            }
+            if (pnl < 0) {
+              dailyLoss += Math.abs(pnl);
+              msg("Loss recorded: $" + Math.abs(pnl).toFixed(2) +
+                  " | Total daily loss: $" + dailyLoss.toFixed(2), "warn");
+            } else {
+              msg("Profit: $" + pnl.toFixed(2), "buy");
+            }
+          }
+          currentPosition = null;
+          entryPrice      = 0;
+          updateStats(closePrice);
         }
-      }
-
-      // ─── CHECK IF ALL ORDERS CLOSED ───────────────────────────
-      function allOrdersClosed() {
-        return stackOrders.every(
-          o => o.status === "tp_hit" || o.status === "sl_hit" || o.status === "idle"
-        );
-      }
-
-      // ─── CHECK IF ANY ORDER IS OPEN ───────────────────────────
-      function anyOrderOpen() {
-        return stackOrders.some(o => o.status === "open");
       }
 
       // ─── EMA CALCULATION ──────────────────────────────────────
       function calcEMA(arr, period) {
-        const k = 2 / (period + 1);
-        let ema = [arr[0]];
+        const k   = 2 / (period + 1);
+        let ema   = [arr[0]];
         for (let i = 1; i < arr.length; i++) {
           ema.push(arr[i] * k + ema[i - 1] * (1 - k));
         }
@@ -599,11 +333,15 @@
       function calcRSI(arr, period = 14) {
         if (arr.length < period + 1) return 50;
         const deltas = [];
-        for (let i = 1; i < arr.length; i++) deltas.push(arr[i] - arr[i - 1]);
+        for (let i = 1; i < arr.length; i++) {
+          deltas.push(arr[i] - arr[i - 1]);
+        }
         const gains  = deltas.map(v => v > 0 ? v : 0);
         const losses = deltas.map(v => v < 0 ? -v : 0);
-        let avgGain  = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
-        let avgLoss  = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
+        let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+        let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
         for (let i = period; i < deltas.length; i++) {
           avgGain = (avgGain * (period - 1) + gains[i])  / period;
           avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
@@ -619,78 +357,100 @@
 
         // Max daily loss guard
         if (dailyLoss >= maxDailyLoss) {
-          msg(`Max daily loss of $${maxDailyLoss} reached. Bot stopped.`, "error");
+          msg("Max daily loss of $" + maxDailyLoss + " reached. Bot paused.", "error");
           stopBot();
           return;
         }
 
         try {
-          // Fetch candles
+          msg("Scanning market...", "info");
+
+          // Fetch candles via public endpoint
           const now   = Math.floor(Date.now() / 1000);
           const start = now - 54000;
-          const query = `?resolution=${RESOLUTION}&symbol=${SYMBOL}&start=${start}&end=${now}`;
-          const data  = await publicCall("/v2/history/candles", query);
+          const query = "?resolution=" + RESOLUTION +
+                        "&symbol=" + SYMBOL +
+                        "&start=" + start +
+                        "&end=" + now;
+
+          const data = await publicCall("/v2/history/candles", query);
 
           if (!data.success || !data.result || data.result.length < 25) {
-            msg("Not enough candle data. Retrying...", "warn");
+            msg("Not enough candle data received.", "warn");
             return;
           }
 
-          const closes    = data.result.map(c => parseFloat(c.close));
-          const price     = closes[closes.length - 1];
-          const ema9      = calcEMA(closes, 9);
-          const ema21     = calcEMA(closes, 21);
-          const rsi       = calcRSI(closes, 14);
+          const closes = data.result.map(c => parseFloat(c.close));
+          const price  = closes[closes.length - 1];
+
+          const ema9  = calcEMA(closes, 9);
+          const ema21 = calcEMA(closes, 21);
+          const rsi   = calcRSI(closes, 14);
+
           const currShort = ema9[ema9.length - 1];
           const currLong  = ema21[ema21.length - 1];
           const prevShort = ema9[ema9.length - 2];
           const prevLong  = ema21[ema21.length - 2];
 
           msg(
-            `Price: $${price.toFixed(1)} | EMA9: ${currShort.toFixed(1)} | ` +
-            `EMA21: ${currLong.toFixed(1)} | RSI: ${rsi.toFixed(1)}`,
+            "Price: $" + price.toFixed(1) +
+            " | EMA9: " + currShort.toFixed(1) +
+            " | EMA21: " + currLong.toFixed(1) +
+            " | RSI: " + rsi.toFixed(1),
             "info"
           );
 
-          updateGlobalStats(price);
+          updateStats(price);
 
-          // ── STEP 1: Check TP/SL for open orders ─────────────
-          if (anyOrderOpen()) {
-            await checkTPSL(price);
-            updateGlobalStats(price);
-          }
-
-          // ── STEP 2: Check if all orders closed → reset ───────
-          if (!anyOrderOpen() && lastSignal !== null) {
-            if (allOrdersClosed()) {
-              cycleCount++;
-              msg(`All 5 orders closed. Cycle #${cycleCount} complete. Waiting for next signal...`, "info");
-              // Reset stack for next cycle
-              stackOrders = readStackConfig();
-              lastSignal  = null;
-              updateGlobalStats(price);
-            }
-          }
-
-          // ── STEP 3: Check for new signal (only if no open orders) ──
-          if (!anyOrderOpen() && lastSignal === null) {
-            const bullish = currShort > currLong && prevShort > prevLong && rsi < 65;
-            const bearish = currShort < currLong && prevShort < prevLong && rsi > 35;
-
-            if (bullish) {
-              msg("BUY signal detected. Opening 5 stack orders...", "buy");
-              stackOrders = readStackConfig();
-              await placeStackOrders("buy");
-            } else if (bearish) {
-              msg("SELL signal detected. Opening 5 stack orders...", "sell");
-              stackOrders = readStackConfig();
-              await placeStackOrders("sell");
+          // ── TP / SL CHECK (if in position) ──────────────────
+          if (currentPosition && entryPrice) {
+            let priceDiff = 0;
+            if (currentPosition === "buy") {
+              priceDiff = price - entryPrice;
             } else {
-              msg("No clear signal. Waiting...", "info");
+              priceDiff = entryPrice - price;
             }
-          } else if (anyOrderOpen()) {
-            const openCount = stackOrders.filter(o => o.status === "open").length;
-            msg(`Monitoring ${openCount} open order(s)...`, "info");
+
+            if (priceDiff >= tpPoints) {
+              msg("Take Profit hit! +" + priceDiff.toFixed(1) + " pts", "buy");
+              await closePosition("Take Profit");
+              return;
+            }
+            if (priceDiff <= -slPoints) {
+              msg("Stop Loss hit! " + priceDiff.toFixed(1) + " pts", "sell");
+              await closePosition("Stop Loss");
+              return;
+            }
+          }
+
+          // ── SIGNAL LOGIC ────────────────────────────────────
+          const bullish = currShort > currLong && prevShort > prevLong && rsi < 65;
+          const bearish = currShort < currLong && prevShort < prevLong && rsi > 35;
+
+          if (bullish) {
+            if (currentPosition === "sell") {
+              msg("Signal flip: Closing SELL, opening BUY", "buy");
+              await closePosition("Signal Flip");
+              await placeOrder("buy");
+            } else if (!currentPosition) {
+              msg("BUY signal detected.", "buy");
+              await placeOrder("buy");
+            } else {
+              msg("Holding BUY position.", "info");
+            }
+          } else if (bearish) {
+            if (currentPosition === "buy") {
+              msg("Signal flip: Closing BUY, opening SELL", "sell");
+              await closePosition("Signal Flip");
+              await placeOrder("sell");
+            } else if (!currentPosition) {
+              msg("SELL signal detected.", "sell");
+              await placeOrder("sell");
+            } else {
+              msg("Holding SELL position.", "info");
+            }
+          } else {
+            msg("No clear signal. Waiting...", "info");
           }
 
         } catch (err) {
@@ -705,18 +465,13 @@
           alert("Please save your API settings first!");
           return;
         }
-        running     = true;
-        stackOrders = readStackConfig();
-        lastSignal  = null;
-
-        document.getElementById("badge").textContent = "BOT ACTIVE - 5 STACK MODE";
+        running = true;
+        document.getElementById("badge").textContent = "BOT ACTIVE - RUNNING";
         document.getElementById("badge").className   = "status on";
         document.getElementById("start").disabled    = true;
         document.getElementById("stop").disabled     = false;
-
-        msg("Bot started in 5-Stack mode.", "buy");
-        msg("Waiting for EMA9/EMA21 + RSI signal...", "info");
-
+        msg("Bot started. Lot size: " + lotSize +
+            " | TP: " + tpPoints + " pts | SL: " + slPoints + " pts", "buy");
         checkMarket();
         timer = setInterval(checkMarket, scanInterval);
       }
@@ -726,20 +481,12 @@
         if (!running) return;
         running = false;
         clearInterval(timer);
-        timer   = null;
-
+        timer = null;
         document.getElementById("badge").textContent = "BOT STOPPED";
         document.getElementById("badge").className   = "status off";
         document.getElementById("start").disabled    = false;
         document.getElementById("stop").disabled     = true;
-
-        const openCount = stackOrders.filter(o => o.status === "open").length;
-        if (openCount > 0) {
-          msg(`Bot stopped. WARNING: ${openCount} order(s) still open on Delta Exchange!`, "error");
-          msg("Please close open positions manually on Delta Exchange.", "error");
-        } else {
-          msg("Bot stopped cleanly. No open positions.", "warn");
-        }
+        msg("Bot stopped.", "warn");
       }
 
       // ─── SAVE SETTINGS ────────────────────────────────────────
@@ -747,17 +494,20 @@
         e.preventDefault();
         apiKey       = document.getElementById("key").value.trim();
         apiSecret    = document.getElementById("secret").value.trim();
+        lotSize      = parseInt(document.getElementById("lots").value)    || 1;
         maxDailyLoss = parseFloat(document.getElementById("loss").value)  || 100;
-        scanInterval = Math.max(15, parseInt(document.getElementById("interval").value) || 30) * 1000;
-        msg(`Settings saved | Max Loss: $${maxDailyLoss} | Interval: ${scanInterval/1000}s`, "info");
+        tpPoints     = parseFloat(document.getElementById("tp-points").value) || 100;
+        slPoints     = parseFloat(document.getElementById("sl-points").value) || 50;
+        scanInterval = Math.max(30, parseInt(document.getElementById("interval").value) || 30) * 1000;
+
+        // NOTE: Keys are NOT saved to localStorage for security
+        msg("Settings saved. TP: " + tpPoints + " pts | SL: " + slPoints +
+            " pts | Max Loss: $" + maxDailyLoss, "info");
         alert("Settings Saved!");
       });
 
       document.getElementById("start").addEventListener("click", startBot);
-      document.getElementById("stop").addEventListener("click",  stopBot);
-
-      // ─── INIT ─────────────────────────────────────────────────
-      buildStackTable();
+      document.getElementById("stop").addEventListener("click", stopBot);
     </script>
   </body>
 </html>
