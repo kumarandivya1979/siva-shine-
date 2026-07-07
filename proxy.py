@@ -4,6 +4,10 @@ import requests
 import hashlib
 import hmac
 import time
+@app.route('/')
+def home():
+    return "Proxy server is running successfully!", 200
+
 
 app = Flask(__name__)
 CORS(app, origins=["null", "http://localhost", "http://127.0.0.1"])
