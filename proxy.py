@@ -11,8 +11,6 @@ CORS(app, origins=["null", "http://localhost", "http://127.0.0.1"])
 DELTA_BASE_URL = "https://api.india.delta.exchange"
 
 # Your computer clock is ahead by ~708 seconds
-# This offset corrects it: local_time + OFFSET = server_time
-# We use a negative offset to bring your clock back in sync
 TIME_OFFSET = -708
 
 def get_corrected_timestamp():
@@ -28,7 +26,6 @@ def generate_signature(secret, method, path, query_string, payload, timestamp):
 def proxy():
     try:
         data = request.get_json()
-
         api_key    = data.get("api_key")
         api_secret = data.get("api_secret")
         method     = data.get("method", "GET").upper()
