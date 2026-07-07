@@ -97,15 +97,8 @@ def public():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-if __name__ == "__main__":
-    local_time     = int(time.time())
-    corrected_time = local_time + TIME_OFFSET
-    print("=" * 50)
-    print("  Delta Exchange Local Proxy Running")
-    print("  Listening on http://localhost:5000")
-    print("=" * 50)
-    print(f"  Local time     : {local_time}")
-    print(f"  Corrected time : {corrected_time}")
-    print(f"  Offset applied : {TIME_OFFSET} seconds")
-    print("=" * 50)
-    app.run(host="127.0.0.1", port=5000, debug=False)
+if __name__ == '__main__':
+    import os
+    # Render provides the port automatically via the PORT environment variable
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
